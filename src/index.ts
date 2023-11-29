@@ -13,6 +13,8 @@ const yoga = createYoga({ schema, context: createContext });
 
 app.use(yoga.graphqlEndpoint, yoga);
 
+app.get("/", "Hello World!!");
+
 // Pass it into a server to hook into request handlers.
 
 // Start the server and you're done!

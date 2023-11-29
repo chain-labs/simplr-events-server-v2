@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userID     String  @id @default(auto()) @map("_id") @db.ObjectId
+  email      String
+  address       String
+  claimedNFTs String[]
+}
+
+model Event {
+  eventID      String   @id @default(auto()) @map("_id") @db.ObjectId
+  eventName    String
+  organizerID  String
+  eventDate    DateTime
+  location     String
+  ticketDetails Json
+}
+
+model NFTTicket {
+  nftID            String   @id @default(auto()) @map("_id") @db.ObjectId
+  eventID          String
+  currentOwnerID   String
+  originalOwnerID  String
+  purchaseDate     DateTime
+  claimedStatus    Boolean
+  transactionDetails Json
+}

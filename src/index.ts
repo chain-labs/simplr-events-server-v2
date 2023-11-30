@@ -23,6 +23,7 @@ Sentry.init({
   // Set sampling rate for profiling - this is relative to tracesSampleRate
   profilesSampleRate: 1.0,
 });
+const app = express();
 
 // The request handler must be the first middleware on the app
 app.use(Sentry.Handlers.requestHandler());
@@ -30,7 +31,6 @@ app.use(Sentry.Handlers.requestHandler());
 // TracingHandler creates a trace for every incoming request
 app.use(Sentry.Handlers.tracingHandler());
 
-const app = express();
 
 // Create a Yoga instance with a GraphQL schema.
 const yoga = createYoga({ schema, context: createContext });

@@ -9,6 +9,7 @@ const express = require("express");
 const Sentry = require("@sentry/node");
 const { ProfilingIntegration } = require("@sentry/profiling-node");
 
+const app = express();
 Sentry.init({
   dsn: "https://cd6298599b4ed906e40f0a21179df3b9@o4505385751019520.ingest.sentry.io/4506315784781824",
   integrations: [
@@ -23,7 +24,6 @@ Sentry.init({
   // Set sampling rate for profiling - this is relative to tracesSampleRate
   profilesSampleRate: 1.0,
 });
-const app = express();
 
 // The request handler must be the first middleware on the app
 app.use(Sentry.Handlers.requestHandler());

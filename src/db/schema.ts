@@ -20,8 +20,10 @@ const typeDefinitions = /* GraphQL */ `
 
 const resolvers = {
   Query: {
-    users: (parent: unknown, args: {}, context: GraphQLContext) =>
-      context.prisma.user.findMany(),
+    users: (parent: unknown, args: {}, context: GraphQLContext) => {
+      console.log("users");
+      return context.prisma.user.findMany();
+    },
   },
 
   Mutation: {

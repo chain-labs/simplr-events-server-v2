@@ -54,9 +54,6 @@ app.post('/post-test', (req, res) => {
 app.post("/api/webhook", async (req, res) => {
   console.log("Webhook sent")
   if (req.method === "POST") {
-    // Middleware to parse JSON request body
-    express.json()(req, res, async () => {
-      //   const { name, email } = req.body // Access the request body
       console.log({ req: req.body });
       const order_url = req.body.api_url;
 
@@ -81,7 +78,7 @@ app.post("/api/webhook", async (req, res) => {
 
       // Perform actions (e.g., create a user) here
       res.status(200).json({ message: "User created successfully" });
-    });
+
   } else {
     res.status(405).end(); // Method Not Allowed
   }

@@ -44,7 +44,7 @@ app.get("/", (req, res) => {
   Sentry.captureMessage(`Hello World`);
   res.send("Hello World!!");
 });
-app.get("/post-test", (req, res) => {
+app.post("/post-test", (req, res) => {
   console.log("Got body:", req.body);
   res.sendStatus(200);
 });

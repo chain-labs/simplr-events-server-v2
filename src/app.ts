@@ -54,7 +54,7 @@ app.post("/api/webhook", async (req, res) => {
   console.log("Webhook sent");
   if (req.method === "POST") {
     // Middleware to parse JSON request body
-    app.json()(req, res, async () => {
+    express.json()(req, res, async () => {
       //   const { name, email } = req.body // Access the request body
       console.log({ req: req });
       const order_url = req.body.api_url;

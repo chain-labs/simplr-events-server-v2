@@ -6,6 +6,7 @@ const { createContext } = require("./db/context");
 
 const { createYoga } = require("graphql-yoga");
 const express = require("express");
+const bodyParser = require("body-parser");
 
 const Sentry = require("@sentry/node");
 const { ProfilingIntegration } = require("@sentry/profiling-node");
@@ -16,6 +17,7 @@ const yoga = createYoga({ schema, context: createContext });
 require('dotenv').config();
 
 app.use(yoga.graphqlEndpoint, yoga);
+app.use(bodyParser.urlencoded({ extended: true }));
 
 Sentry.init({
   dsn: "https://cd6298599b4ed906e40f0a21179df3b9@o4505385751019520.ingest.sentry.io/4506315784781824",
@@ -43,6 +45,10 @@ app.use(Sentry.Handlers.tracingHandler());
 app.get("/", (req, res) => {
   Sentry.captureMessage(`Hello World`);
   res.send("Hello World!!");
+});
+app.post('/post-test', (req, res) => {
+  console.log('Got body:', req.body);
+  res.sendStatus(200);
 });
 
 app.post("/api/webhook", async (req, res) => {

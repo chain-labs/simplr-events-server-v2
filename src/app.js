@@ -98,7 +98,7 @@ app.use(function onError(err, req, res, next) {
 // Pass it into a server to hook into request handlers.
 
 // Start the server and you're done!
-app.listen(4000, () => {
+app.listen(process.env.PORT, () => {
   console.info("Server is running on http://localhost:4000/graphql");
 });
 

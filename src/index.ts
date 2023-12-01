@@ -10,6 +10,10 @@ const Sentry = require("@sentry/node");
 const { ProfilingIntegration } = require("@sentry/profiling-node");
 
 const app = express();
+const yoga = createYoga({ schema, context: createContext });
+
+app.use(yoga.graphqlEndpoint, yoga);
+
 Sentry.init({
   dsn: "https://cd6298599b4ed906e40f0a21179df3b9@o4505385751019520.ingest.sentry.io/4506315784781824",
   integrations: [
@@ -31,13 +35,10 @@ app.use(Sentry.Handlers.requestHandler());
 // TracingHandler creates a trace for every incoming request
 app.use(Sentry.Handlers.tracingHandler());
 
-
 // Create a Yoga instance with a GraphQL schema.
-const yoga = createYoga({ schema, context: createContext });
-
-app.use(yoga.graphqlEndpoint, yoga);
 
 app.get("/", (req, res) => {
+  Sentry.captureMessage(`Hello World`);
   res.send("Hello World!!");
 });
 

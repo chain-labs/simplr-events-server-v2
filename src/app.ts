@@ -1,69 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-type GraphQLContext = {
-  prisma: PrismaClient;
-};
-
-function createContext(): GraphQLContext {
-  return { prisma };
-}
-
-import { makeExecutableSchema } from "@graphql-tools/schema";
-
-const typeDefinitions = /* GraphQL */ `
-  type Query {
-    users: [User!]!
-  }
-
-  type Mutation {
-    addUser(email: String!, address: String!): User!
-  }
-
-  type User {
-    userID: String!
-    email: String!
-    address: String!
-    claimedNFTs: [String!]
-  }
-`;
-
-const resolvers = {
-  Query: {
-    users: (parent: unknown, args: {}, context: GraphQLContext) => {
-      console.log("users");
-      return context.prisma.user.findMany();
-    },
-  },
-
-  Mutation: {
-    addUser: async (
-      parent: unknown,
-      args: { email: string; address: string },
-      context: GraphQLContext
-    ) => {
-      const user = await context.prisma.user.create({
-        data: {
-          email: args.email,
-          address: args.address,
-          claimedNFTs: [],
-        },
-      });
-
-      return user;
-    },
-  },
-};
-
-const schema = makeExecutableSchema({
-  resolvers: [resolvers],
-  typeDefs: [typeDefinitions],
-});
-
 import { createYoga } from "graphql-yoga";
 import express from "express";
 import bodyParser from "body-parser";
+
+import schema from "./schema.js";
+import { createContext } from "./context.js";
 
 import Sentry from "@sentry/node";
 import { ProfilingIntegration } from "@sentry/profiling-node";
@@ -104,7 +44,7 @@ app.get("/", (req, res) => {
   Sentry.captureMessage(`Hello World`);
   res.send("Hello World!!");
 });
-app.post("/post-test", (req, res) => {
+app.get("/post-test", (req, res) => {
   console.log("Got body:", req.body);
   res.sendStatus(200);
 });

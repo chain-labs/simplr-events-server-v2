@@ -2,14 +2,15 @@
   "name": "simplr-events-server-v2",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "src/app.ts",
   "engines": {
     "node": ">=16.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node-dev --respawn --transpile-only src/app.js",
-    "start": "node src/app.js"
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "start": "node build/app.js",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -37,7 +38,12 @@
     "serverless-http": "^3.2.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.23.4",
+    "@babel/core": "^7.23.5",
+    "@babel/preset-env": "^7.23.5",
+    "@babel/preset-typescript": "^7.23.3",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.2"
-  }
+  },
+  "type": "module"
 }

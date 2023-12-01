@@ -1,5 +1,5 @@
-const { makeExecutableSchema } = require("@graphql-tools/schema");
-import type { GraphQLContext } from "./context";
+import { makeExecutableSchema } from "@graphql-tools/schema";
+import { GraphQLContext } from "./context";
 
 const typeDefinitions = /* GraphQL */ `
   type Query {
@@ -45,7 +45,9 @@ const resolvers = {
   },
 };
 
-export const schema = makeExecutableSchema({
+const schema = makeExecutableSchema({
   resolvers: [resolvers],
   typeDefs: [typeDefinitions],
 });
+
+export default schema;

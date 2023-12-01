@@ -56,7 +56,7 @@ app.post("/api/webhook", async (req, res) => {
     // Middleware to parse JSON request body
     express.json()(req, res, async () => {
       //   const { name, email } = req.body // Access the request body
-      console.log({ req: req });
+      console.log({ req: req.body });
       const order_url = req.body.api_url;
 
       const order = await axios.get(order_url, {

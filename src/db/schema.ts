@@ -1,4 +1,4 @@
-import { makeExecutableSchema } from "@graphql-tools/schema";
+const { makeExecutableSchema } = require("@graphql-tools/schema");
 import type { GraphQLContext } from "./context";
 
 const typeDefinitions = /* GraphQL */ `

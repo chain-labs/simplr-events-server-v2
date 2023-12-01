@@ -1,9 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
 export type GraphQLContext = {
-  prisma: PrismaClient;
+  prisma: typeof PrismaClient;
 };
 
 export function createContext(): GraphQLContext {

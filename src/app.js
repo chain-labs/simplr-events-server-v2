@@ -1,9 +1,10 @@
-import axios from "axios";
-import { createContext } from "./db/context";
-const serverless = require("serverless-http");
+const axios = require("axios");
+const { schema } = require("./db/schema");
+const { createContext } = require("./db/context");
+// import { schema } from "./src/db/schema";
+// import { createContext } from "./src/db/context";
 
 const { createYoga } = require("graphql-yoga");
-const { schema } = require("./db/schema");
 const express = require("express");
 
 const Sentry = require("@sentry/node");
@@ -96,5 +97,3 @@ app.listen(4000, () => {
 });
 
 module.exports = app;
-
-module.exports.handler = serverless(app);

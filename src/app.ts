@@ -54,6 +54,7 @@ app.post("/api/webhook", async (req, res) => {
   if (req.method === "POST") {
     console.log({ req: req.body });
     const order_url = req.body.api_url;
+    Sentry.captureMessage("WEbhook REceived");
 
     // const order = await axios.get(order_url, {
     //   headers: {

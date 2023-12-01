@@ -13,6 +13,8 @@ const { ProfilingIntegration } = require("@sentry/profiling-node");
 const app = express();
 const yoga = createYoga({ schema, context: createContext });
 
+require('dotenv').config();
+
 app.use(yoga.graphqlEndpoint, yoga);
 
 Sentry.init({

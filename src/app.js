@@ -45,7 +45,8 @@ app.get("/", (req, res) => {
   res.send("Hello World!!");
 });
 
-app.post("/webhook", (req, res) => {
+app.post("/api/webhook", (req, res) => {
+  console.log("Webhook sent")
   if (req.method === "POST") {
     // Middleware to parse JSON request body
     express.json()(req, res, async () => {

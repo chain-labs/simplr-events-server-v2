@@ -60,7 +60,7 @@ async function addBatchToDb(
       eventname: eventName,
       mailsent: true,
       mailsentTimestamp: mailSentTimestamp,
-      messageid: entry.messageId,
+      messageId: entry.messageId,
       daysEntered: 0,
       maxDaysEntry: maxDaysEntry,
       contractAddress: contractAddress.toString(),
@@ -70,6 +70,7 @@ async function addBatchToDb(
   });
   try {
     const storedValues = insertData.map(async (data) => {
+      console.log({ data });
       const storedData = await prisma.holder.create({
         data,
       });
@@ -77,15 +78,15 @@ async function addBatchToDb(
     });
     log("addBatch.mutation", "addBatchToDb", "Stored Values: ", storedValues);
     if (storedValues.length === insertData.length) {
-      return 1;
+      return { storedValues, success: true };
     } else {
-      return -1;
+      return { storedValues: null, success: false };
     }
   } catch (e) {
     logError("addBatch.mutation", "addBatchToDb", "Error at adding new batch");
     logError("addBatch.mutation", "addBatchToDb", "Input data:", insertData);
     logError("addBatch.mutation", "addBatchToDb", "Error", e);
-    return -1;
+    return { storedValues: null, success: false };
   }
 }
 
@@ -123,5 +124,6 @@ export async function addBatch(body: AddBatchRequestBody) {
       body.eventName,
       mailSentOn
     );
+    log("addBatch", "addBatch fn", { response: dbStoreResponse.storedValues });
   }
 }

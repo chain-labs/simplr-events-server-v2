@@ -11,6 +11,8 @@ import Sentry from "@sentry/node";
 import { ProfilingIntegration } from "@sentry/profiling-node";
 import dotenv from "dotenv";
 import { addBatch } from "./routes/addBatch.js";
+import { writeSingleUserToBatch } from "./functions/addBatch.js";
+import { log } from "./utils/logger.utils.js";
 
 const app = express();
 const yoga = createYoga({ schema, context: createContext });
@@ -49,9 +51,14 @@ app.get("/", (req, res) => {
   Sentry.captureMessage(`Hello World`);
   res.send("Hello World!!");
 });
+
 app.post("/post-test", (req, res) => {
   console.log("Got body:", req.body);
   res.sendStatus(200);
+});
+
+app.get("/currentBatchId", async (req, res) => {
+  res.send(200);
 });
 
 app.post("/api/webhook", async (req, res) => {
@@ -71,44 +78,57 @@ app.post("/api/webhook", async (req, res) => {
           order.data.last_name
         } with email ${order.data.email} at ${new Date(order.data.created)}.`
       );
-      // Sentry.captureMessage(
-      //   `Order Placed by ${order.data.first_name} ${
-      //     order.data.last_name
-      //   } with email ${order.data.email} at ${new Date(order.data.created)}.`,
-      //   {
-      //     tags: {
-      //       body: req.body,
-      //       order: order.data,
-      //     },
-      //   }
-      // );
-
-      // Interact with Smart Contract to Add Batch to it
-
-      // Add the batch holder to DB after sending an email
       const { first_name, last_name, email } = order.data;
-
       const { EVENT_NAME, CONTRACT_ADDRESS, FIRST_ENTRY, LAST_ENTRY } =
         process.env;
 
-      addBatch({
+      // Interact with Smart Contract to Add Batch to it
+      const web3response = await writeSingleUserToBatch({
+        firstName: first_name,
+        lastName: last_name,
+        emailId: email,
         eventName: EVENT_NAME,
-        batchId: 1,
-        addBatchTimestamp: Date.now(),
-        contractAddress: CONTRACT_ADDRESS,
-        inputParams: [
-          {
-            firstName: first_name,
-            lastName: last_name,
-            email,
-            firstAllowedEntryDate: FIRST_ENTRY,
-            lastAllowedEntryDate: LAST_ENTRY,
-          },
-        ],
       });
 
+      log("app.ts", "/api/webhook handler", { web3response });
+
+      // Add the batch holder to DB after sending an email
+
+      if (web3response.success) {
+        addBatch({
+          eventName: EVENT_NAME,
+          batchId: web3response.batchId,
+          addBatchTimestamp: Date.now(),
+          contractAddress: CONTRACT_ADDRESS,
+          inputParams: [
+            {
+              firstName: first_name,
+              lastName: last_name,
+              email,
+              firstAllowedEntryDate: FIRST_ENTRY,
+              lastAllowedEntryDate: LAST_ENTRY,
+            },
+          ],
+        });
+        Sentry.captureMessage(
+          `Order Placed by ${order.data.first_name} ${
+            order.data.last_name
+          } with email ${order.data.email} at ${new Date(order.data.created)}.`,
+          {
+            tags: {
+              body: req.body,
+              order: order.data,
+            },
+          }
+        );
+        res
+          .sendStatus(200)
+          .json({ message: `Batch created for email ${email}` });
+      } else {
+        res.sendStatus(500).json({ message: "Error... Something Went Wrong" });
+      }
+
       // Perform actions (e.g., create a user) here
-      res.status(200).json({ message: "User created successfully" });
     });
 
     // Perform actions (e.g., create a user) here

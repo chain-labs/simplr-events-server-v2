@@ -19,7 +19,7 @@ export interface HolderRow {
   redeemedTimestamp?: number;
   daysEntered?: number;
   maxDaysEntry?: number;
-  messageId?: string,
+  messageId?: string;
   firstAllowedEntryDate: Date;
   lastAllowedEntryDate: Date;
   contractAddress?: BytesLike;
@@ -36,7 +36,7 @@ export interface CsvRow {
 }
 
 export interface CsvRowWithMessageId extends CsvRow {
-  messageId: string | undefined
+  messageId: string | undefined;
 }
 
 export interface ResponseData<RequestSpecificResponseData> {
@@ -55,6 +55,14 @@ export interface AddBatchRequestBody {
 export interface AddBatchResponseData {
   usersAdded: number;
   message: string;
+}
+
+export interface QueryParams {
+  firstName: string;
+  lastName: string;
+  emailId: string;
+  batchId?: string;
+  eventName: string;
 }
 
 export interface ClaimTicketRequestBody {

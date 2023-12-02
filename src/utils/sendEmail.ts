@@ -18,7 +18,6 @@ const {
   BASE_URL,
 } = process.env;
 
-console.log({ AWS_ACCESS_KEY, AWS_SECRET_ACCESS_KEY });
 
 const generateClaimUrl = (
   email: string,

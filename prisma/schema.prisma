@@ -27,10 +27,10 @@ model Holder {
   mailsent                Boolean
   mailsentTimestamp       Int
   messageId               String?
-  isClaimed               Boolean?
+  isClaimed               Boolean @default(false)
   claimedTimestamp        Int?
   claimTrx                String?
-  isRedeemed              Boolean?
+  isRedeemed              Boolean @default(false)
   redeemedTimestamp       Int?
   daysEntered             Int
   maxDaysEntry            Int

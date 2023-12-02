@@ -12,6 +12,8 @@ import { ProfilingIntegration } from "@sentry/profiling-node";
 import dotenv from "dotenv";
 import { addBatch, writeSingleUserToBatch } from "./routes/addBatch.js";
 import { log } from "./utils/logger.utils.js";
+import { ClaimTicketRequestBody } from "./types/DatabaseTypes.js";
+import { getTimestamp, stringToNumberTimestamp } from "./utils/time.utils.js";
 
 const app = express();
 const yoga = createYoga({ schema, context: createContext });
@@ -43,6 +45,8 @@ app.use(Sentry.Handlers.requestHandler());
 
 // TracingHandler creates a trace for every incoming request
 app.use(Sentry.Handlers.tracingHandler());
+
+app.use(express.json());
 
 // Create a Yoga instance with a GraphQL schema.
 
@@ -134,6 +138,63 @@ app.post("/api/webhook", async (req, res) => {
     res.status(200).json({ message: "User created successfully" });
   } else {
     res.status(405).end(); // Method Not Allowed
+  }
+});
+
+app.post("/claimTicket", async (req, res) => {
+  const body: ClaimTicketRequestBody = req.body;
+
+  const claimDateTime = new Date(stringToNumberTimestamp(body.claimTimestamp));
+  const claimTimestampInDbRange = getTimestamp(claimDateTime);
+
+  try {
+    const whereObj = {
+      firstname: body.firstName,
+      lastname: body.lastName,
+      email: body.email,
+      eventname: body.eventName,
+      contractAddress: body.contractAddress,
+      batchId: body.batchId.toString(),
+    };
+
+    const currentValues = await prisma.holder.findFirst({
+      where: whereObj,
+      select: { isClaimed: true, id: true },
+    });
+    console.log({ currentValues });
+    if (currentValues.isClaimed !== undefined && currentValues.isClaimed) {
+      res.sendStatus(404).send("Ticket already claimed");
+    } else {
+      console.log("Here");
+      const storedData = await prisma.holder.update({
+        where: {
+          id: currentValues.id,
+        },
+        data: {
+          isClaimed: true,
+          claimedTimestamp: claimTimestampInDbRange,
+          claimTrx: body.claimTrx.toString(),
+          tokenId: body.tokenId.toString(),
+          accountAddress: body.accountAddress.toString(),
+          isSubscribed: body.isSubscribed,
+        },
+      });
+      log(
+        "ClaimTicket.mutation",
+        "claimTicketAtDb",
+        "Claimed ticket and the stored value is:",
+        { storedData }
+      );
+
+      if (!storedData.isClaimed) {
+        res.sendStatus(404).send("Not Found Currrent Ticket");
+      } else {
+        res.sendStatus(200).send({ success: true, value: storedData });
+      }
+    }
+    res.sendStatus(200);
+  } catch (err) {
+    console.error({ err });
   }
 });
 

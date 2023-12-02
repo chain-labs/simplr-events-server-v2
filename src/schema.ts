@@ -4,6 +4,7 @@ import { GraphQLContext } from "./context";
 const typeDefinitions = /* GraphQL */ `
   type Query {
     users: [User!]!
+    holders: [Holder!]!
   }
 
   type Mutation {
@@ -16,6 +17,31 @@ const typeDefinitions = /* GraphQL */ `
     address: String!
     claimedNFTs: [String!]
   }
+
+  type Holder {
+    id: ID!
+    firstname: String!
+    lastname: String!
+    email: String!
+    batchId: String!
+    eventname: String!
+    mailsent: Boolean!
+    mailsentTimestamp: Int!
+    messageId: String
+    isClaimed: Boolean
+    claimedTimestamp: Int
+    claimTrx: String
+    tokenId: String
+    accountAddress: String
+    isSubscribed: Boolean
+    isRedeemed: Boolean
+    redeemedTimestamp: Int
+    daysEntered: Int!
+    maxDaysEntry: Int!
+    contractAddress: String!
+    firstAllowedEntryDate: Int!
+    lastAllowedEntryDate: Int!
+  }
 `;
 
 const resolvers = {
@@ -23,6 +49,10 @@ const resolvers = {
     users: (parent: unknown, args: {}, context: GraphQLContext) => {
       console.log("users");
       return context.prisma.user.findMany();
+    },
+    holders: (parent: unknown, args: {}, context: GraphQLContext) => {
+      console.log("Queried Holders");
+      return context.prisma.holder.findMany();
     },
   },
 

@@ -70,8 +70,8 @@ export interface ClaimTicketRequestBody {
   firstName: string;
   lastName: string;
   eventName: string;
-  contractAddress: BytesLike;
-  accountAddress: BytesLike;
+  contractAddress: string;
+  accountAddress: string;
   tokenId: number;
   isSubscribed: boolean;
   claimTimestamp: string;

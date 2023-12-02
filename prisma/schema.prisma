@@ -30,6 +30,9 @@ model Holder {
   isClaimed               Boolean @default(false)
   claimedTimestamp        Int?
   claimTrx                String?
+  tokenId                 String?
+  accountAddress          String?
+  isSubscribed            Boolean @default(false)
   isRedeemed              Boolean @default(false)
   redeemedTimestamp       Int?
   daysEntered             Int

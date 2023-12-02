@@ -17,21 +17,24 @@ model User {
   claimedNFTs String[]
 }
 
-model Event {
-  eventID      String   @id @default(auto()) @map("_id") @db.ObjectId
-  eventName    String
-  organizerID  String
-  eventDate    DateTime
-  location     String
-  ticketDetails Json
-}
-
-model NFTTicket {
-  nftID            String   @id @default(auto()) @map("_id") @db.ObjectId
-  eventID          String
-  currentOwnerID   String
-  originalOwnerID  String
-  purchaseDate     DateTime
-  claimedStatus    Boolean
-  transactionDetails Json
+model Holder {
+  id                      String  @id @default(auto()) @map("_id") @db.ObjectId
+  firstname               String
+  lastname                String
+  email                   String
+  batchId                 String
+  eventname               String
+  mailsent                Boolean
+  mailsentTimestamp       Int
+  messageId               String?
+  isClaimed               Boolean?
+  claimedTimestamp        Int?
+  claimTrx                String?
+  isRedeemed              Boolean?
+  redeemedTimestamp       Int?
+  daysEntered             Int
+  maxDaysEntry            Int
+  contractAddress         String
+  firstAllowedEntryDate   Int
+  lastAllowedEntryDate    Int
 }

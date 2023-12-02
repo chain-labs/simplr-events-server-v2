@@ -1,3 +1,4 @@
+import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import { createYoga } from "graphql-yoga";
 import express from "express";
@@ -9,6 +10,7 @@ import { createContext } from "./context.js";
 import Sentry from "@sentry/node";
 import { ProfilingIntegration } from "@sentry/profiling-node";
 import dotenv from "dotenv";
+import { addBatch } from "./routes/addBatch.js";
 
 const app = express();
 const yoga = createYoga({ schema, context: createContext });
@@ -17,6 +19,8 @@ dotenv.config();
 
 app.use(yoga.graphqlEndpoint, yoga);
 app.use(bodyParser.urlencoded({ extended: true }));
+
+const prisma = new PrismaClient();
 
 Sentry.init({
   dsn: "https://cd6298599b4ed906e40f0a21179df3b9@o4505385751019520.ingest.sentry.io/4506315784781824",
@@ -51,12 +55,9 @@ app.post("/post-test", (req, res) => {
 });
 
 app.post("/api/webhook", async (req, res) => {
-  console.log("Webhook sent");
   if (req.method === "POST") {
     // Middleware to parse JSON request body
     express.json()(req, res, async () => {
-      //   const { name, email } = req.body // Access the request body
-      console.log({ req: req.body });
       const order_url = req.body.api_url;
 
       const order = await axios.get(order_url, {
@@ -65,18 +66,46 @@ app.post("/api/webhook", async (req, res) => {
         },
       });
 
-      console.log({ order });
-      Sentry.captureMessage(
+      console.log(
         `Order Placed by ${order.data.first_name} ${
           order.data.last_name
-        } with email ${order.data.email} at ${new Date(order.data.created)}.`,
-        {
-          tags: {
-            body: req.body,
-            order: order.data,
-          },
-        }
+        } with email ${order.data.email} at ${new Date(order.data.created)}.`
       );
+      // Sentry.captureMessage(
+      //   `Order Placed by ${order.data.first_name} ${
+      //     order.data.last_name
+      //   } with email ${order.data.email} at ${new Date(order.data.created)}.`,
+      //   {
+      //     tags: {
+      //       body: req.body,
+      //       order: order.data,
+      //     },
+      //   }
+      // );
+
+      // Interact with Smart Contract to Add Batch to it
+
+      // Add the batch holder to DB after sending an email
+      const { first_name, last_name, email } = order.data;
+
+      const { EVENT_NAME, CONTRACT_ADDRESS, FIRST_ENTRY, LAST_ENTRY } =
+        process.env;
+
+      addBatch({
+        eventName: EVENT_NAME,
+        batchId: 1,
+        addBatchTimestamp: Date.now(),
+        contractAddress: CONTRACT_ADDRESS,
+        inputParams: [
+          {
+            firstName: first_name,
+            lastName: last_name,
+            email,
+            firstAllowedEntryDate: FIRST_ENTRY,
+            lastAllowedEntryDate: LAST_ENTRY,
+          },
+        ],
+      });
 
       // Perform actions (e.g., create a user) here
       res.status(200).json({ message: "User created successfully" });
@@ -102,7 +131,7 @@ app.use(function onError(err, req, res, next) {
 
 // Pass it into a server to hook into request handlers.
 
-const PORT = process.env.PORT;
+const { PORT } = process.env;
 
 // Start the server and you're done!
 app.listen(PORT, () => {

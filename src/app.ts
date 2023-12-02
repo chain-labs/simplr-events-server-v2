@@ -10,8 +10,7 @@ import { createContext } from "./context.js";
 import Sentry from "@sentry/node";
 import { ProfilingIntegration } from "@sentry/profiling-node";
 import dotenv from "dotenv";
-import { addBatch } from "./routes/addBatch.js";
-import { writeSingleUserToBatch } from "./functions/addBatch.js";
+import { addBatch, writeSingleUserToBatch } from "./routes/addBatch.js";
 import { log } from "./utils/logger.utils.js";
 
 const app = express();

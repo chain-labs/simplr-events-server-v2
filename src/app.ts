@@ -6,6 +6,7 @@ import bodyParser from "body-parser";
 
 import schema from "./schema.js";
 import { createContext } from "./context.js";
+import cors from "cors";
 
 import Sentry from "@sentry/node";
 import { ProfilingIntegration } from "@sentry/profiling-node";
@@ -22,6 +23,7 @@ dotenv.config();
 
 app.use(yoga.graphqlEndpoint, yoga);
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 const prisma = new PrismaClient();
 

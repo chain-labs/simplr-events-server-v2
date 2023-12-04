@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "dev": "ts-node-esm --transpile-only src/app.ts",
     "start": "node build/app.js",
     "build": "tsc",
     "serve": "git pull && npm run build && npm start",
@@ -32,6 +32,7 @@
     "@sentry/profiling-node": "^1.2.6",
     "axios": "^1.6.2",
     "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "ethers": "^5.5.1",
     "express": "^4.18.2",

@@ -325,7 +325,7 @@ app.post("/registerEvent", async (req, res) => {
       lastAllowedEntryDate: parseInt(lastAllowedEntryDate),
       emailTemplate,
       baseClaimUrl,
-      evenbriteApiKey: platform === "EVENTBRITE" ? eventbrite_api_key : "",
+      eventbriteApiKey: platform === "EVENTBRITE" ? eventbrite_api_key : "",
     },
   });
 

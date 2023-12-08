@@ -154,7 +154,7 @@ app.post("/api/webhook", async (req, res) => {
 
       const order = await axios.get(order_url, {
         headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_EVENTBRITE_OAUTH}`,
+          Authorization: `Bearer ${process.env.EVENTBRITE_OAUTH}`,
         },
       });
 

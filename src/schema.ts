@@ -1,5 +1,5 @@
 import { makeExecutableSchema } from "@graphql-tools/schema";
-import { GraphQLContext } from "./context";
+import { GraphQLContext } from "./context.js";
 
 const typeDefinitions = /* GraphQL */ `
   type Query {

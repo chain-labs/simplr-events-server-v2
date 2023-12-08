@@ -3,7 +3,7 @@ import {
   AddBatchResponseData,
   CsvRowWithMessageId,
   ResponseData,
-} from "../types/DatabaseTypes";
+} from "../types/DatabaseTypes.js";
 import { log, logError } from "../utils/logger.utils.js";
 import { sendClaimableEmail } from "../utils/sendEmail.js";
 import {
@@ -11,7 +11,7 @@ import {
   getTimestamp,
   stringToNumberTimestamp,
 } from "../utils/time.utils.js";
-import { PrismaClient } from "@prisma/client";
+import { Event, PrismaClient } from "@prisma/client";
 import ethers from "ethers";
 import { QueryParams } from "../types/DatabaseTypes.js";
 import CONTRACT from "../contracts.js";
@@ -53,29 +53,54 @@ export const writeSingleUserToBatch = async (query: QueryParams) => {
   }
 };
 
-const prisma = new PrismaClient();
+export const writeHoldersToBatch = async (
+  queries: QueryParams[],
+  contractAddress
+) => {
+  try {
+    const provider = new ethers.providers.JsonRpcProvider(
+      `https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_KEY}`
+    );
+    const signer = new ethers.Wallet(MINTER_PRIVATE_KEY, provider);
+    const contractABI = CONTRACT.SimplrEvents.abi;
+    const contract = new ethers.Contract(
+      contractAddress,
+      contractABI,
+      provider
+    );
 
-const requestBody: AddBatchRequestBody = {
-  inputParams: [
-    {
-      firstName: "Mihirsinh",
-      lastName: "Parmar",
-      email: "mihirsinh@chainlabs.in",
-      firstAllowedEntryDate: Date.now().toString(),
-      lastAllowedEntryDate: Date.now().toString(),
-    },
-  ],
-  batchId: 1,
-  eventName: "Vivacity 2023",
-  contractAddress: "0x",
-  addBatchTimestamp: Date.now(),
+    const currentBatchId = await contract.callStatic.currentBatchId();
+    console.log({ currentBatchId: currentBatchId.toString() });
+    const batchId = parseInt(currentBatchId) + 1;
+
+    const hashes = [];
+
+    queries.forEach((query) => {
+      //create hash
+      const { firstName, lastName, eventName, emailId } = query;
+      const concatenatedString = `${emailId}-${lastName}-${firstName}-${batchId}-${eventName}`;
+      const hash = ethers.utils.keccak256(
+        ethers.utils.toUtf8Bytes(concatenatedString)
+      );
+      hashes.push(hash);
+    });
+    const cid = await sendDataToIPFS(hashes);
+    const merkleRoot = await getMerkleTreeRoot(hashes);
+    const tx = contract.connect(signer).addBatch(merkleRoot, cid, { value: 0 });
+    return { batchId, success: true };
+  } catch (err) {
+    logError("function/addBatch", "writeHoldersToBatch", { err });
+    return { success: false };
+  }
 };
+
+const prisma = new PrismaClient();
 
 async function addBatchToDb(
   data: Array<CsvRowWithMessageId>,
   batchId: string,
   contractAddress: String,
-  eventName: string,
+  event: Event,
   mailSentTimestamp: number
 ) {
   // write data
@@ -95,9 +120,8 @@ async function addBatchToDb(
     return {
       firstname: entry.firstName,
       lastname: entry.lastName,
-      email: entry.email,
+      email: entry.emailId,
       batchId: batchId,
-      eventname: eventName,
       mailsent: true,
       mailsentTimestamp: mailSentTimestamp,
       messageId: entry.messageId,
@@ -106,13 +130,31 @@ async function addBatchToDb(
       contractAddress: contractAddress.toString(),
       firstAllowedEntryDate: firstEntryDateTimestamp,
       lastAllowedEntryDate: lastEntryDateTimestamp,
+      event: {
+        connect: { eventId: event.eventId },
+      },
     };
   });
   try {
     const storedValues = insertData.map(async (data) => {
       console.log({ data });
       const storedData = await prisma.holder.create({
-        data,
+        data: {
+          firstname: data.firstname,
+          lastname: data.lastname,
+          email: data.email,
+          batchId: batchId,
+          mailsent: true,
+          mailsentTimestamp: mailSentTimestamp,
+          messageId: data.messageId,
+          daysEntered: 0,
+          maxDaysEntry: data.maxDaysEntry,
+          firstAllowedEntryDate: data.firstAllowedEntryDate,
+          lastAllowedEntryDate: data.lastAllowedEntryDate,
+          event: {
+            connect: { id: event.id },
+          },
+        },
       });
       return storedData;
     });
@@ -135,7 +177,9 @@ export async function addBatch(body: AddBatchRequestBody) {
   const { areMailsSent, messageIds } = await sendClaimableEmail(
     body.inputParams,
     body.batchId.toString(),
-    body.eventName
+    body.event.eventname,
+    body.event.baseClaimUrl,
+    body.event.emailTemplate
   );
   // let areMailsSent = 1;
 
@@ -161,9 +205,10 @@ export async function addBatch(body: AddBatchRequestBody) {
       dataToBeStored,
       body.batchId.toString(),
       body.contractAddress.toString(),
-      body.eventName,
+      body.event,
       mailSentOn
     );
+
     log("addBatch", "addBatch fn", { response: dbStoreResponse.storedValues });
   }
 }

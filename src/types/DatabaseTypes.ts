@@ -1,3 +1,4 @@
+import { Admin, Holder, Event } from "@prisma/client";
 import { BytesLike } from "ethers";
 import { BigNumberish } from "ethers";
 
@@ -30,7 +31,7 @@ export interface HolderRow {
 export interface CsvRow {
   firstName: string;
   lastName: string;
-  email: string;
+  emailId: string;
   firstAllowedEntryDate: string;
   lastAllowedEntryDate: string;
 }
@@ -47,7 +48,7 @@ export interface ResponseData<RequestSpecificResponseData> {
 export interface AddBatchRequestBody {
   inputParams: Array<CsvRow>;
   batchId: BigNumberish;
-  eventName: string;
+  event: Event;
   contractAddress: BytesLike;
   addBatchTimestamp: number;
 }

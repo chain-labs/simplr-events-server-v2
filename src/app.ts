@@ -4,14 +4,21 @@ import { createYoga } from "graphql-yoga";
 import express from "express";
 import bodyParser from "body-parser";
 
+import { Admin, Holder, Event } from "@prisma/client";
+
 import schema from "./schema.js";
 import { createContext } from "./context.js";
 import cors from "cors";
+import multer from "multer";
 
 import Sentry from "@sentry/node";
 import { ProfilingIntegration } from "@sentry/profiling-node";
 import dotenv from "dotenv";
-import { addBatch, writeSingleUserToBatch } from "./routes/addBatch.js";
+import {
+  addBatch,
+  writeHoldersToBatch,
+  writeSingleUserToBatch,
+} from "./routes/addBatch.js";
 import { log } from "./utils/logger.utils.js";
 import { ClaimTicketRequestBody } from "./types/DatabaseTypes.js";
 import { getTimestamp, stringToNumberTimestamp } from "./utils/time.utils.js";
@@ -27,8 +34,12 @@ app.use(cors());
 
 const prisma = new PrismaClient();
 
+const upload = multer();
+
+const { EVENT_NAME, CONTRACT_ADDRESS, FIRST_ENTRY, LAST_ENTRY } = process.env;
+
 Sentry.init({
-  dsn: "https://cd6298599b4ed906e40f0a21179df3b9@o4505385751019520.ingest.sentry.io/4506315784781824",
+  dsn: "https://0dbfee09b84de709b93feab9ea2fa9b7@o4506185897476096.ingest.sentry.io/4506357791129600",
   integrations: [
     // enable HTTP calls tracing
     new Sentry.Integrations.Http({ tracing: true }),
@@ -50,6 +61,10 @@ app.use(Sentry.Handlers.tracingHandler());
 
 app.use(express.json());
 
+app.set("view engine", "ejs");
+
+//Views
+
 // Create a Yoga instance with a GraphQL schema.
 
 app.get("/", (req, res) => {
@@ -57,9 +72,74 @@ app.get("/", (req, res) => {
   res.send("Hello World!!");
 });
 
-app.post("/post-test", (req, res) => {
+app.post("/uploadGuestList", upload.single("uploadCsv"), async (req, res) => {
   console.log("Got body:", req.body);
-  res.sendStatus(200);
+  const csv = req.file.buffer.toString("utf8");
+  const guestList = csv
+    .split("\r\n")
+    .splice(1)
+    .map((guest) => {
+      return guest.split(",").splice(0, 3);
+    });
+
+  const { eventId } = req.body;
+  const event = await prisma.event.findFirst({ where: { eventId } });
+
+  const holders = await prisma.holder.count({ where: { eventId: event.id } });
+
+  if (holders !== guestList.length) {
+    const guestListFormatted = guestList.splice(0, guestList.length - holders);
+    const guests = guestListFormatted.map((guest) => {
+      const guestNames = guest[1].split(" ");
+
+      return {
+        firstName: guestNames[0],
+        lastName: guestNames[guestNames.length - 1],
+        emailId: guest[2],
+        eventName: event.eventname,
+      };
+    });
+    const web3response = await writeHoldersToBatch(
+      guests,
+      event.contractAddress
+    );
+
+    if (web3response.success) {
+      console.log({ web3response, guests });
+      const inputParams = guests.map((guest) => {
+        const { firstName, lastName, emailId } = guest;
+
+        return {
+          firstName,
+          lastName,
+          emailId,
+          firstAllowedEntryDate: event.firstAllowedEntryDate,
+          lastAllowedEntryDate: event.lastAllowedEntryDate,
+        };
+      });
+      addBatch({
+        event,
+        batchId: web3response.batchId,
+        addBatchTimestamp: Date.now(),
+        contractAddress: event.contractAddress,
+        inputParams,
+      });
+      res.json({
+        message: `${guestListFormatted.length} guests added and sent email!`,
+        guests,
+      });
+    } else {
+      res.sendStatus(500).json({ message: "Error... Something Went Wrong" });
+    }
+  } else
+    res.send({
+      message: "All Guests already invited",
+    });
+});
+
+app.get("/admin", (req, res) => {
+  console.log("Rendering admin");
+  res.render("pages/admin");
 });
 
 app.get("/currentBatchId", async (req, res) => {
@@ -83,16 +163,18 @@ app.post("/api/webhook", async (req, res) => {
           order.data.last_name
         } with email ${order.data.email} at ${new Date(order.data.created)}.`
       );
-      const { first_name, last_name, email } = order.data;
-      const { EVENT_NAME, CONTRACT_ADDRESS, FIRST_ENTRY, LAST_ENTRY } =
-        process.env;
+      const { first_name, last_name, email, event_id } = order.data;
+
+      const event = await prisma.event.findFirst({
+        where: { eventId: event_id },
+      });
 
       // Interact with Smart Contract to Add Batch to it
       const web3response = await writeSingleUserToBatch({
         firstName: first_name,
         lastName: last_name,
         emailId: email,
-        eventName: EVENT_NAME,
+        eventName: event.eventname,
       });
 
       log("app.ts", "/api/webhook handler", { web3response });
@@ -101,7 +183,7 @@ app.post("/api/webhook", async (req, res) => {
 
       if (web3response.success) {
         addBatch({
-          eventName: EVENT_NAME,
+          event: event,
           batchId: web3response.batchId,
           addBatchTimestamp: Date.now(),
           contractAddress: CONTRACT_ADDRESS,
@@ -109,7 +191,7 @@ app.post("/api/webhook", async (req, res) => {
             {
               firstName: first_name,
               lastName: last_name,
-              email,
+              emailId: email,
               firstAllowedEntryDate: FIRST_ENTRY,
               lastAllowedEntryDate: LAST_ENTRY,
             },
@@ -198,6 +280,57 @@ app.post("/claimTicket", async (req, res) => {
   } catch (err) {
     console.error({ err });
   }
+});
+
+app.post("/registerEvent", async (req, res) => {
+  const {
+    eventname,
+    eventId,
+    platform,
+    contractAddress,
+    firstAllowedEntryDate,
+    lastAllowedEntryDate,
+    emailTemplate,
+    baseClaimUrl,
+  }: {
+    eventname: string;
+    eventId: string;
+    platform: "EVENTBRITE" | "LUMA";
+    contractAddress: string;
+    firstAllowedEntryDate: string;
+    lastAllowedEntryDate: string;
+    emailTemplate: string;
+    baseClaimUrl: string;
+  } = req.body;
+
+  const baseUrl = baseClaimUrl.endsWith("/")
+    ? baseClaimUrl.slice(0, baseClaimUrl.length - 1)
+    : baseClaimUrl;
+
+  const newEvent = await prisma.event.create({
+    data: {
+      eventname: eventname,
+      eventId: eventId,
+      platform: platform,
+      admin: {
+        create: {
+          username: `${eventname.toLowerCase().split(" ").join("-")}-admin`,
+          password: `${eventname.toLowerCase().split(" ").join("-")}-pwd`,
+        },
+      },
+      contractAddress,
+      firstAllowedEntryDate: parseInt(firstAllowedEntryDate),
+      lastAllowedEntryDate: parseInt(lastAllowedEntryDate),
+      emailTemplate,
+      baseClaimUrl,
+    },
+  });
+
+  res.sendStatus(200).send("Event Created", baseUrl);
+});
+
+app.post("/uploadGuests", async (req, res) => {
+  const body = req.body;
 });
 
 // The error handler must be registered before any other error middleware and after all controllers

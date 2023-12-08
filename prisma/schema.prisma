@@ -11,33 +11,60 @@ datasource db {
 }
 
 model User {
-  userID     String  @id @default(auto()) @map("_id") @db.ObjectId
-  email      String
-  address       String
+  userID      String   @id @default(auto()) @map("_id") @db.ObjectId
+  email       String
+  address     String
   claimedNFTs String[]
 }
 
 model Holder {
-  id                      String  @id @default(auto()) @map("_id") @db.ObjectId
-  firstname               String
-  lastname                String
-  email                   String
-  batchId                 String
-  eventname               String
-  mailsent                Boolean
-  mailsentTimestamp       Int
-  messageId               String?
-  isClaimed               Boolean @default(false)
-  claimedTimestamp        Int?
-  claimTrx                String?
-  tokenId                 String?
-  accountAddress          String?
-  isSubscribed            Boolean @default(false)
-  isRedeemed              Boolean @default(false)
-  redeemedTimestamp       Int?
-  daysEntered             Int
-  maxDaysEntry            Int
-  contractAddress         String
-  firstAllowedEntryDate   Int
-  lastAllowedEntryDate    Int
+  id                    String  @id @default(auto()) @map("_id") @db.ObjectId
+  firstname             String
+  lastname              String
+  email                 String
+  batchId               String
+  event                 Event   @relation(fields: [eventId], references: [id])
+  mailsent              Boolean
+  mailsentTimestamp     Int
+  messageId             String?
+  isClaimed             Boolean @default(false)
+  claimedTimestamp      Int?
+  claimTrx              String?
+  tokenId               String?
+  accountAddress        String?
+  isSubscribed          Boolean @default(false)
+  isRedeemed            Boolean @default(false)
+  redeemedTimestamp     Int?
+  daysEntered           Int
+  maxDaysEntry          Int
+  firstAllowedEntryDate Int
+  lastAllowedEntryDate  Int
+  eventId               String  @db.ObjectId
+}
+
+model Admin {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  username String
+  password String
+  Event    Event[]
+}
+
+model Event {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  eventname       String
+  eventId         String
+  platform        Platform
+  contractAddress String
+  admin           Admin    @relation(fields: [adminId], references: [id])
+  adminId         String   @db.ObjectId
+  holders         Holder[]
+  firstAllowedEntryDate Int
+  lastAllowedEntryDate  Int
+  emailTemplate   String
+  baseClaimUrl    String
+}
+
+enum Platform {
+  EVENTBRITE
+  LUMA
 }

@@ -5,7 +5,7 @@ import {
   SendBulkTemplatedEmailCommand,
   SendBulkTemplatedEmailCommandInput,
 } from "@aws-sdk/client-ses";
-import { CsvRow } from "../types/DatabaseTypes";
+import { CsvRow } from "../types/DatabaseTypes.js";
 import { log, logError } from "./logger.utils.js";
 
 const {
@@ -14,21 +14,19 @@ const {
   AWS_API_VERSION,
   AWS_REGION,
   AWS_SES_VERIFIED_MAIL,
-  EMAIL_TEMPLATE,
-  BASE_URL,
 } = process.env;
-
 
 const generateClaimUrl = (
   email: string,
   lastName: string,
   firstName: string,
   batchId: string,
-  eventName: string
+  eventName: string,
+  claimBaseUrl: string
 ) => {
   log("sendEmail", "generateClaimUrl", "Generating Claim URL");
   const whitespaceRegExp = / /g;
-  return `${BASE_URL}/claim?emailid=${email.replace(
+  return `${claimBaseUrl}/claim?emailid=${email.replace(
     whitespaceRegExp,
     "%20"
   )}&lastname=${lastName.replace(
@@ -46,7 +44,9 @@ const generateClaimUrl = (
 export async function sendClaimableEmail(
   receivers: Array<CsvRow>,
   batchId: string,
-  eventName: string
+  eventName: string,
+  claimBaseUrl: string,
+  emailTemplate: string
 ) {
   try {
     log("sendEmail", "sendClaimableEmail", "Sending Claimable Emails");
@@ -65,20 +65,25 @@ export async function sendClaimableEmail(
     const ses = new SESClient(configure);
     log("sendEmail", "sendClaimableEmail", { ses });
 
-    log("sendEmail", "sendClaimableEmail", "Create array inputs of receivers");
+    log("sendEmail", "sendClaimableEmail", {
+      msg: "Create array inputs of receivers",
+      receivers,
+    });
+
     const destinations = receivers.map((receiver) => ({
       Destination: {
-        ToAddresses: [receiver.email],
+        ToAddresses: [receiver.emailId],
       },
       ReplacementTemplateData: JSON.stringify({
         contact: { firstName: receiver.firstName },
         claim: {
           url: generateClaimUrl(
-            receiver.email,
+            receiver.emailId,
             receiver.lastName,
             receiver.firstName,
             batchId,
-            eventName
+            eventName,
+            claimBaseUrl
           ),
         },
         company: {
@@ -94,7 +99,7 @@ export async function sendClaimableEmail(
     const bulkSendInput: SendBulkTemplatedEmailCommandInput = {
       Destinations: destinations,
       Source: AWS_SES_VERIFIED_MAIL,
-      Template: EMAIL_TEMPLATE,
+      Template: emailTemplate,
       DefaultTemplateData: JSON.stringify({ contact: { firstName: "Buddy" } }),
     };
 

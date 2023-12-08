@@ -292,6 +292,7 @@ app.post("/registerEvent", async (req, res) => {
     lastAllowedEntryDate,
     emailTemplate,
     baseClaimUrl,
+    eventbrite_api_key,
   }: {
     eventname: string;
     eventId: string;
@@ -301,6 +302,7 @@ app.post("/registerEvent", async (req, res) => {
     lastAllowedEntryDate: string;
     emailTemplate: string;
     baseClaimUrl: string;
+    eventbrite_api_key?: string;
   } = req.body;
 
   const baseUrl = baseClaimUrl.endsWith("/")
@@ -323,6 +325,7 @@ app.post("/registerEvent", async (req, res) => {
       lastAllowedEntryDate: parseInt(lastAllowedEntryDate),
       emailTemplate,
       baseClaimUrl,
+      evenbriteApiKey: platform === "EVENTBRITE" ? eventbrite_api_key : "",
     },
   });
 

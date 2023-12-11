@@ -64,6 +64,7 @@ model Event {
   emailTemplate         String
   baseClaimUrl          String
   eventbriteApiKey      String?
+  webhookId             String?
 }
 
 enum Platform {

@@ -36,7 +36,7 @@ const prisma = new PrismaClient();
 
 const upload = multer();
 
-const { EVENT_NAME, CONTRACT_ADDRESS, FIRST_ENTRY, LAST_ENTRY } = process.env;
+const WEBHOOK_ENDPOINT = "http://events-api.simplrhq.com/api/webhooks";
 
 Sentry.init({
   dsn: "https://0dbfee09b84de709b93feab9ea2fa9b7@o4506185897476096.ingest.sentry.io/4506357791129600",
@@ -164,67 +164,74 @@ app.post("/api/webhook", async (req, res) => {
   if (req.method === "POST") {
     // Middleware to parse JSON request body
     express.json()(req, res, async () => {
-      const order_url = req.body.api_url;
-
-      const order = await axios.get(order_url, {
-        headers: {
-          Authorization: `Bearer ${process.env.EVENTBRITE_OAUTH}`,
-        },
-      });
-
-      console.log(
-        `Order Placed by ${order.data.first_name} ${
-          order.data.last_name
-        } with email ${order.data.email} at ${new Date(order.data.created)}.`
-      );
-      const { first_name, last_name, email, event_id } = order.data;
+      // Get Correct Event from webhook ID
+      const webhookId = req.body.config.webhook_id;
 
       const event = await prisma.event.findFirst({
-        where: { eventId: event_id },
+        where: { webhookId },
       });
+      const order_url = req.body.api_url;
+      if (event) {
+        const eventbrite_api_key = event.eventbriteApiKey;
 
-      // Interact with Smart Contract to Add Batch to it
-      const web3response = await writeSingleUserToBatch({
-        firstName: first_name,
-        lastName: last_name,
-        emailId: email,
-        eventName: event.eventname,
-      });
-
-      log("app.ts", "/api/webhook handler", { web3response });
-
-      // Add the batch holder to DB after sending an email
-
-      if (web3response.success) {
-        addBatch({
-          event: event,
-          batchId: web3response.batchId,
-          addBatchTimestamp: Date.now(),
-          contractAddress: CONTRACT_ADDRESS,
-          inputParams: [
-            {
-              firstName: first_name,
-              lastName: last_name,
-              emailId: email,
-              firstAllowedEntryDate: FIRST_ENTRY,
-              lastAllowedEntryDate: LAST_ENTRY,
-            },
-          ],
+        const order = await axios.get(order_url, {
+          headers: {
+            Authorization: `Bearer ${eventbrite_api_key}`,
+          },
         });
-        Sentry.captureMessage(
+
+        console.log(
           `Order Placed by ${order.data.first_name} ${
             order.data.last_name
-          } with email ${order.data.email} at ${new Date(order.data.created)}.`,
-          {
-            tags: {
-              body: req.body,
-              order: order.data,
-            },
-          }
+          } with email ${order.data.email} at ${new Date(order.data.created)}.`
         );
-        res
-          .sendStatus(200)
-          .json({ message: `Batch created for email ${email}` });
+        const { first_name, last_name, email } = order.data;
+
+        // Interact with Smart Contract to Add Batch to it
+        const web3response = await writeSingleUserToBatch({
+          firstName: first_name,
+          lastName: last_name,
+          emailId: email,
+          eventName: event.eventname,
+        });
+
+        log("app.ts", "/api/webhook handler", { web3response });
+
+        // Add the batch holder to DB after sending an email
+
+        if (web3response.success) {
+          addBatch({
+            event: event,
+            batchId: web3response.batchId,
+            addBatchTimestamp: Date.now(),
+            contractAddress: event.contractAddress,
+            inputParams: [
+              {
+                firstName: first_name,
+                lastName: last_name,
+                emailId: email,
+                firstAllowedEntryDate: event.firstAllowedEntryDate.toString(),
+                lastAllowedEntryDate: event.lastAllowedEntryDate.toString(),
+              },
+            ],
+          });
+          Sentry.captureMessage(
+            `Order Placed by ${order.data.first_name} ${
+              order.data.last_name
+            } with email ${order.data.email} at ${new Date(
+              order.data.created
+            )}.`,
+            {
+              tags: {
+                body: req.body,
+                order: order.data,
+              },
+            }
+          );
+          res
+            .sendStatus(200)
+            .json({ message: `Batch created for email ${email}` });
+        }
       } else {
         res.sendStatus(500).json({ message: "Error... Something Went Wrong" });
       }
@@ -233,7 +240,6 @@ app.post("/api/webhook", async (req, res) => {
     });
 
     // Perform actions (e.g., create a user) here
-    res.status(200).json({ message: "User created successfully" });
   } else {
     res.status(405).end(); // Method Not Allowed
   }
@@ -323,27 +329,64 @@ app.post("/registerEvent", async (req, res) => {
     ? baseClaimUrl.slice(0, baseClaimUrl.length - 1)
     : baseClaimUrl;
 
-  const newEvent = await prisma.event.create({
-    data: {
-      eventname: eventname,
-      eventId: eventId,
-      platform: platform,
-      admin: {
-        create: {
-          username: `${eventname.toLowerCase().split(" ").join("-")}-admin`,
-          password: `${eventname.toLowerCase().split(" ").join("-")}-pwd`,
-        },
+  const newData = {
+    eventname: eventname,
+    eventId: eventId,
+    platform: platform,
+    admin: {
+      create: {
+        username: `${eventname.toLowerCase().split(" ").join("-")}-admin`,
+        password: `${eventname.toLowerCase().split(" ").join("-")}-pwd`,
       },
-      contractAddress,
-      firstAllowedEntryDate: parseInt(firstAllowedEntryDate),
-      lastAllowedEntryDate: parseInt(lastAllowedEntryDate),
-      emailTemplate,
-      baseClaimUrl,
-      eventbriteApiKey: platform === "EVENTBRITE" ? eventbrite_api_key : "",
     },
+    contractAddress,
+    firstAllowedEntryDate: parseInt(firstAllowedEntryDate),
+    lastAllowedEntryDate: parseInt(lastAllowedEntryDate),
+    emailTemplate,
+    baseClaimUrl,
+    eventbriteApiKey: platform === "EVENTBRITE" ? eventbrite_api_key : "",
+    webhookId: "",
+  };
+
+  if (platform === "EVENTBRITE") {
+    // Fetch OrganizationId from evenbrite_api_key
+    const organizationEndpoint = `https://www.eventbriteapi.com/v3/users/me/organizations/`;
+    const { data: organization } = await axios.get(organizationEndpoint, {
+      headers: {
+        Authorization: `Bearer ${eventbrite_api_key}`,
+      },
+    });
+
+    const orgId = organization.organizations[0].id;
+
+    // Create Webhook using OrganizationId and eventbrite_api_key
+    const webhookCreateEndpoint = `https://www.eventbriteapi.com/v3/organizations/${orgId}/webhooks/`;
+    const headers = {
+      Authorization: `Bearer ${eventbrite_api_key}`,
+      "Content-Type": "application/json",
+    };
+
+    const body = {
+      endpoint_url: WEBHOOK_ENDPOINT,
+      actions: "order.placed,order.updated",
+      event_id: eventId,
+    };
+
+    const { data: webhook } = await axios.post(webhookCreateEndpoint, body, {
+      headers,
+    });
+
+    const webhookId = webhook.id;
+
+    //Store WebhookID in dbData along with others
+    newData.webhookId = webhookId;
+  }
+
+  const newEvent = await prisma.event.create({
+    data: newData,
   });
 
-  res.sendStatus(200).send("Event Created", baseUrl);
+  res.send({ msg: "Created Event", newEvent });
 });
 
 app.post("/uploadGuests", async (req, res) => {

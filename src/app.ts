@@ -36,7 +36,7 @@ const prisma = new PrismaClient();
 
 const upload = multer();
 
-const WEBHOOK_ENDPOINT = "http://events-api.simplrhq.com/api/webhooks";
+const WEBHOOK_ENDPOINT = "http://events-api.simplrhq.com/api/webhook";
 
 Sentry.init({
   dsn: "https://0dbfee09b84de709b93feab9ea2fa9b7@o4506185897476096.ingest.sentry.io/4506357791129600",

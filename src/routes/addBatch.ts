@@ -99,7 +99,7 @@ const prisma = new PrismaClient();
 async function addBatchToDb(
   data: Array<CsvRowWithMessageId>,
   batchId: string,
-  contractAddress: String,
+  contractAddress: string,
   event: Event,
   mailSentTimestamp: number
 ) {
@@ -122,6 +122,7 @@ async function addBatchToDb(
       lastname: entry.lastName,
       email: entry.emailId,
       batchId: batchId,
+      ticketId: entry.ticketId,
       mailsent: true,
       mailsentTimestamp: mailSentTimestamp,
       messageId: entry.messageId,
@@ -143,6 +144,7 @@ async function addBatchToDb(
           firstname: data.firstname,
           lastname: data.lastname,
           email: data.email,
+          ticketId: data.ticketId,
           batchId: batchId,
           mailsent: true,
           mailsentTimestamp: mailSentTimestamp,

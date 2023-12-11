@@ -34,6 +34,7 @@ export interface CsvRow {
   emailId: string;
   firstAllowedEntryDate: string;
   lastAllowedEntryDate: string;
+  ticketId?: string;
 }
 
 export interface CsvRowWithMessageId extends CsvRow {

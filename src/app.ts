@@ -85,10 +85,18 @@ app.post("/uploadGuestList", upload.single("uploadCsv"), async (req, res) => {
   const { eventId } = req.body;
   const event = await prisma.event.findFirst({ where: { eventId } });
 
-  const holders = await prisma.holder.count({ where: { eventId: event.id } });
+  const holders = await prisma.holder.findMany({
+    where: { eventId: event.id },
+  });
 
-  if (holders !== guestList.length) {
-    const guestListFormatted = guestList.splice(0, guestList.length - holders);
+  if (holders.length !== guestList.length) {
+    const guestListFormatted = guestList.filter((guest) => {
+      const ind = holders.findIndex((holder) => guest[0] === holder.ticketId);
+      log("app", "uploadFile", { guest, ind: !!ind });
+      return !!ind;
+    });
+    log("App", "uploadfile", { guestList, guestListFormatted, holders });
+
     const guests = guestListFormatted.map((guest) => {
       const guestNames = guest[1].split(" ");
 
@@ -97,43 +105,49 @@ app.post("/uploadGuestList", upload.single("uploadCsv"), async (req, res) => {
         lastName: guestNames[guestNames.length - 1],
         emailId: guest[2],
         eventName: event.eventname,
+        ticketId: guest[0],
       };
     });
-    const web3response = await writeHoldersToBatch(
-      guests,
-      event.contractAddress
-    );
-
-    if (web3response.success) {
-      console.log({ web3response, guests });
-      const inputParams = guests.map((guest) => {
-        const { firstName, lastName, emailId } = guest;
-
-        return {
-          firstName,
-          lastName,
-          emailId,
-          firstAllowedEntryDate: event.firstAllowedEntryDate,
-          lastAllowedEntryDate: event.lastAllowedEntryDate,
-        };
-      });
-      addBatch({
-        event,
-        batchId: web3response.batchId,
-        addBatchTimestamp: Date.now(),
-        contractAddress: event.contractAddress,
-        inputParams,
-      });
-      res.json({
-        message: `${guestListFormatted.length} guests added and sent email!`,
+    if (guestListFormatted.length) {
+      const web3response = await writeHoldersToBatch(
         guests,
-      });
+        event.contractAddress
+      );
+
+      if (web3response.success) {
+        console.log({ web3response, guests });
+        const inputParams = guests.map((guest) => {
+          const { firstName, lastName, emailId, ticketId } = guest;
+
+          return {
+            firstName,
+            lastName,
+            emailId,
+            firstAllowedEntryDate: event.firstAllowedEntryDate,
+            lastAllowedEntryDate: event.lastAllowedEntryDate,
+            ticketId,
+          };
+        });
+        addBatch({
+          event,
+          batchId: web3response.batchId,
+          addBatchTimestamp: Date.now(),
+          contractAddress: event.contractAddress,
+          inputParams,
+        });
+        res.json({
+          message: `${guestListFormatted.length} guests added and sent email!`,
+          guests,
+        });
+      }
     } else {
       res.sendStatus(500).json({ message: "Error... Something Went Wrong" });
     }
   } else
     res.send({
       message: "All Guests already invited",
+      guestList,
+      holders,
     });
 });
 

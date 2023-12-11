@@ -19,6 +19,7 @@ model User {
 
 model Holder {
   id                    String  @id @default(auto()) @map("_id") @db.ObjectId
+  ticketId              String?
   firstname             String
   lastname              String
   email                 String
@@ -62,7 +63,7 @@ model Event {
   lastAllowedEntryDate  Int
   emailTemplate         String
   baseClaimUrl          String
-  eventbriteApiKey      String
+  eventbriteApiKey      String?
 }
 
 enum Platform {

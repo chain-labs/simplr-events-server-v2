@@ -74,6 +74,7 @@ app.get("/", (req, res) => {
 
 app.post("/uploadGuestList", upload.single("uploadCsv"), async (req, res) => {
   console.log("Got body:", req.body);
+  // @ts-ignore
   const csv = req.file.buffer.toString("utf8");
   const guestList = csv
     .split("\r\n")
@@ -193,6 +194,7 @@ app.post("/api/webhook", async (req, res) => {
           lastName: last_name,
           emailId: email,
           eventName: event.eventname,
+          contractAddress: event.contractAddress,
         });
 
         log("app.ts", "/api/webhook handler", { web3response });

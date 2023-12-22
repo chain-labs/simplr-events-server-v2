@@ -171,8 +171,12 @@ app.post("/api/webhook", async (req, res) => {
       const event = await prisma.event.findFirst({
         where: { webhookId },
       });
-      const order_url = req.body.api_url;
-      if (event) {
+      const order_url: string = req.body.api_url;
+
+      const ticketId = order_url.slice(0, -1).split("orders/")[1];
+      const checkOrder = await prisma.holder.findFirst({ where: { ticketId } });
+
+      if (event && checkOrder) {
         const eventbrite_api_key = event.eventbriteApiKey;
 
         const order = await axios.get(order_url, {
@@ -214,6 +218,7 @@ app.post("/api/webhook", async (req, res) => {
                 emailId: email,
                 firstAllowedEntryDate: event.firstAllowedEntryDate.toString(),
                 lastAllowedEntryDate: event.lastAllowedEntryDate.toString(),
+                ticketId,
               },
             ],
           });
@@ -237,11 +242,7 @@ app.post("/api/webhook", async (req, res) => {
       } else {
         res.sendStatus(500).json({ message: "Error... Something Went Wrong" });
       }
-
-      // Perform actions (e.g., create a user) here
     });
-
-    // Perform actions (e.g., create a user) here
   } else {
     res.status(405).end(); // Method Not Allowed
   }
@@ -254,11 +255,17 @@ app.post("/claimTicket", async (req, res) => {
   const claimTimestampInDbRange = getTimestamp(claimDateTime);
 
   try {
+    const event = await prisma.event.findFirst({
+      where: {
+        eventname: body.eventName,
+      },
+    });
     const whereObj = {
       firstname: body.firstName,
       lastname: body.lastName,
       email: body.email,
-      eventname: body.eventName,
+      eventID: event.id,
+
       contractAddress: body.contractAddress,
       batchId: body.batchId.toString(),
     };
@@ -271,7 +278,6 @@ app.post("/claimTicket", async (req, res) => {
     if (currentValues.isClaimed !== undefined && currentValues.isClaimed) {
       res.sendStatus(404).send("Ticket already claimed");
     } else {
-      console.log("Here");
       const storedData = await prisma.holder.update({
         where: {
           id: currentValues.id,

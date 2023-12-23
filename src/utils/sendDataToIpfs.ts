@@ -33,6 +33,6 @@ export const getMerkleTreeRoot = async (hashes) => {
   const tree = await new MerkleTree(leafs, keccak256, { sortPairs: true });
   console.log({ tree });
 
-  const MerkleRoot = "0x" + tree.getRoot().toString("hex");
+  const MerkleRoot = tree.getHexRoot();
   return MerkleRoot;
 };

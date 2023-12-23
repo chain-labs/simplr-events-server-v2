@@ -53,6 +53,8 @@ export const writeSingleUserToBatch = async ({
     );
     const cid = await sendDataToIPFS([hash]);
     const merkleRoot = await getMerkleTreeRoot([hash]);
+    console.log("Merkle Root:", { merkleRoot });
+
     const tx = contract.connect(signer).addBatch(merkleRoot, cid, { value: 0 });
     return { batchId, success: true };
   } catch (err) {

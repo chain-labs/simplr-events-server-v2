@@ -30,9 +30,13 @@ export const sendDataToIPFS = async (hashedData) => {
 
 export const getMerkleTreeRoot = async (hashes) => {
   const leafs = hashes.map((entry) => ethers.utils.keccak256(entry));
-  const tree = await new MerkleTree(leafs, keccak256, { sortPairs: true });
-  console.log({ tree });
+  console.log({ leafs });
+
+  const tree = new MerkleTree(leafs, keccak256, { sortPairs: true });
 
   const MerkleRoot = tree.getHexRoot();
+  const proofs = leafs.map((leaf) => tree.getHexProof(leaf));
+
+  console.log({ tree, proofs });
   return MerkleRoot;
 };

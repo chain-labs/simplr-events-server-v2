@@ -174,9 +174,13 @@ app.post("/api/webhook", async (req, res) => {
       const order_url: string = req.body.api_url;
 
       const ticketId = order_url.slice(0, -1).split("orders/")[1];
-      const checkOrder = await prisma.holder.findFirst({ where: { ticketId } });
+      const existingHolder = await prisma.holder.count({
+        where: { ticketId },
+      });
 
-      if (event && checkOrder) {
+      console.log({ ticketId, existingHolder });
+
+      if (event && !existingHolder) {
         const eventbrite_api_key = event.eventbriteApiKey;
 
         const order = await axios.get(order_url, {

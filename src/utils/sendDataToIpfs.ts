@@ -35,8 +35,5 @@ export const getMerkleTreeRoot = async (hashes) => {
   const tree = new MerkleTree(leafs, keccak256, { sortPairs: true });
 
   const MerkleRoot = tree.getHexRoot();
-  const proofs = leafs.map((leaf) => tree.getHexProof(leaf));
-
-  console.log({ tree, proofs });
   return MerkleRoot;
 };

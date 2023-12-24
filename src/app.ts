@@ -152,11 +152,6 @@ app.post("/uploadGuestList", upload.single("uploadCsv"), async (req, res) => {
     });
 });
 
-app.get("/admin", (req, res) => {
-  console.log("Rendering admin");
-  res.render("pages/admin");
-});
-
 app.get("/currentBatchId", async (req, res) => {
   res.send(200);
 });

@@ -100,7 +100,7 @@ export const writeHoldersToBatch = async (
     return { batchId, success: true };
   } catch (err) {
     logError("function/addBatch", "writeHoldersToBatch", { err });
-    return { success: false };
+    return { success: false, message: err };
   }
 };
 

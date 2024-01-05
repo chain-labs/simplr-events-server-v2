@@ -140,6 +140,11 @@ app.post("/uploadGuestList", upload.single("uploadCsv"), async (req, res) => {
           message: `${guestListFormatted.length} guests added and sent email!`,
           guests,
         });
+      } else {
+        res.sendStatus(500).json({
+          message: "Error... Something Went Wrong in contract Interaction",
+          error: web3response.message,
+        });
       }
     } else {
       res.sendStatus(500).json({ message: "Error... Something Went Wrong" });

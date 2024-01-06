@@ -3,9 +3,9 @@ import express from "express";
 import Sentry from "@sentry/node";
 import { PrismaClient } from "@prisma/client";
 
-import addBatch from "../../functions/addBatch.js";
-import { log } from "../../utils/logger.utils.js";
 import { writeSingleUserToBatch } from "../../functions/writeSingleUserToBatch.js";
+import { log } from "../../utils/logger.utils.js";
+import addBatch from "../../functions/addBatch.js";
 
 const prisma = new PrismaClient();
 

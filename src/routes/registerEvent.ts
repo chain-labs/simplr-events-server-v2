@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
+import addMinterRole from "../functions/addMinterRole.js";
 
 const WEBHOOK_ENDPOINT = "http://events-api.simplrhq.com/api/webhook";
 
@@ -27,6 +28,13 @@ const registerEvent = async (req, res) => {
     baseClaimUrl: string;
     eventbrite_api_key?: string;
   } = req.body;
+
+  //Add minter role
+  const minterRoleResponse = await addMinterRole(contractAddress);
+
+  if (!minterRoleResponse.success) {
+    res.send({ code: 500, error: minterRoleResponse.err });
+  }
 
   const baseUrl = baseClaimUrl.endsWith("/")
     ? baseClaimUrl.slice(0, baseClaimUrl.length - 1)

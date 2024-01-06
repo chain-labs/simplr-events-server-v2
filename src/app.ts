@@ -66,8 +66,6 @@ app.use(function onError(err, req, res, next) {
   res.end(res.sentry + "\n");
 });
 
-// Pass it into a server to hook into request handlers.
-
 const { PORT } = process.env;
 
 // Start the server and you're done!

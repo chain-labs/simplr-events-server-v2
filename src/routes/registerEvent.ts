@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import addMinterRole from "../functions/addMinterRole.js";
+import addSmartContractToPaymaster from "../functions/addSmartContractToPaymaster.js";
+import CONTRACT from "../contracts.js";
 
 const WEBHOOK_ENDPOINT = "http://events-api.simplrhq.com/api/webhook";
 
@@ -93,11 +95,25 @@ const registerEvent = async (req, res) => {
     newData.webhookId = webhookId;
   }
 
-  const newEvent = await prisma.event.create({
-    data: newData,
-  });
+  const biconomyWhitelistingResponse = await addSmartContractToPaymaster(
+    eventname,
+    contractAddress,
+    CONTRACT.SimplrEvents.abi,
+    ["mintTicket"]
+  );
 
-  res.send({ msg: "Created Event", newEvent });
+  if (biconomyWhitelistingResponse.success) {
+    const newEvent = await prisma.event.create({
+      data: newData,
+    });
+
+    res.send({ msg: "Created Event", newEvent });
+  } else {
+    res.send({
+      msg: "Error while adding smart contract to paymaster. Try Again!",
+      err: biconomyWhitelistingResponse.res,
+    });
+  }
 };
 
 export default registerEvent;

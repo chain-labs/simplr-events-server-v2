@@ -35,8 +35,13 @@ const writeHoldersToBatch = async (queries: QueryParams[], contractAddress) => {
       hashes.push(hash);
     });
     const cid = await sendDataToIPFS(hashes);
+
     const merkleRoot = await getMerkleTreeRoot(hashes);
-    const tx = contract.connect(signer).addBatch(merkleRoot, cid, { value: 0 });
+    const tx = await contract
+      .connect(signer)
+      .addBatch(merkleRoot, cid, { value: 0 });
+    console.log({ cid, merkleRoot, tx });
+
     return { batchId, success: true };
   } catch (err) {
     logError("function/addBatch", "writeHoldersToBatch", { err });

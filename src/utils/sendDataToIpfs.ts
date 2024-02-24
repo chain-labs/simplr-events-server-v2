@@ -5,17 +5,18 @@ import { MerkleTree } from "merkletreejs";
 
 export const PINATA_URL = "https://api.pinata.cloud/";
 
-const { PINATA_KEY, PINATA_KEY_SECRET } = process.env;
+const { PINATA_KEY, PINATA_KEY_SECRET, PINATA_JWT } = process.env;
 
 export const sendDataToIPFS = async (hashedData) => {
-  const data = JSON.stringify(hashedData);
-  console.log(data);
+  const data = { pinataContent: hashedData };
+  const body = JSON.stringify(data);
+  console.log({ body, hashedData });
 
   const cid = await axios
-    .post(`${PINATA_URL}pinning/pinJSONToIPFS`, data, {
+    .post(`${PINATA_URL}pinning/pinJSONToIPFS`, body, {
       headers: {
-        pinata_api_key: PINATA_KEY,
-        pinata_secret_api_key: PINATA_KEY_SECRET,
+        Authorization: `Bearer ${PINATA_JWT}`,
+        "Content-Type": "application/json",
       },
     })
     .then(function (response) {

@@ -13,6 +13,7 @@ import uploadGuestList from "./routes/luma/uploadGuestList.js";
 import eventbriteWebhook from "./routes/eventbrite/webhook.js";
 import registerEvent from "./routes/registerEvent.js";
 import claimTicket from "./routes/claimTicket.js";
+import testAuth from "./routes/testAuth.js";
 
 const app = express();
 const yoga = createYoga({ schema, context: createContext });
@@ -22,7 +23,6 @@ const upload = multer();
 app.use(yoga.graphqlEndpoint, yoga);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
-
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -54,6 +54,8 @@ app.post("/uploadGuestList", upload.single("uploadCsv"), uploadGuestList);
 app.post("/api/webhook", eventbriteWebhook);
 app.post("/claimTicket", claimTicket);
 app.post("/registerEvent", registerEvent);
+
+app.get("/testAuth", testAuth);
 
 // The error handler must be registered before any other error middleware and after all controllers
 app.use(Sentry.Handlers.errorHandler());

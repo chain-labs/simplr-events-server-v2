@@ -53,6 +53,7 @@ const uploadGuestList = async (req, res) => {
 
         if (web3response.success) {
           console.log({ web3response, guests });
+          
           const inputParams = guests.map((guest) => {
             const { firstName, lastName, emailId, ticketId } = guest;
 

@@ -27,6 +27,7 @@
   "homepage": "https://github.com/chain-labs/simplr-events-server-v2#readme",
   "dependencies": {
     "@aws-sdk/client-ses": "^3.465.0",
+    "@pinata/sdk": "^2.1.0",
     "@prisma/client": "^5.7.0",
     "@sentry/node": "^7.84.0",
     "@sentry/profiling-node": "^1.2.6",

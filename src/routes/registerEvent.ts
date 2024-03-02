@@ -32,11 +32,12 @@ const registerEvent = async (req, res) => {
   } = req.body;
 
   //Add minter role
-  const minterRoleResponse = await addMinterRole(contractAddress);
+  // const minterRoleResponse = await addMinterRole(contractAddress);
+  // console.log({ minterRoleResponse });
 
-  if (!minterRoleResponse.success) {
-    res.send({ code: 500, error: minterRoleResponse.err });
-  }
+  // if (!minterRoleResponse.success) {
+  //   res.send({ code: 500, error: minterRoleResponse.err });
+  // }
 
   const baseUrl = baseClaimUrl.endsWith("/")
     ? baseClaimUrl.slice(0, baseClaimUrl.length - 1)
@@ -60,6 +61,8 @@ const registerEvent = async (req, res) => {
     eventbriteApiKey: platform === "EVENTBRITE" ? eventbrite_api_key : "",
     webhookId: "",
   };
+
+  console.log({ newData });
 
   if (platform === "EVENTBRITE") {
     // Fetch OrganizationId from evenbrite_api_key

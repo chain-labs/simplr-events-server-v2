@@ -12,6 +12,9 @@ export default async function addSmartContractToPaymaster(
   const AUTH_TOKEN = process.env.BICONOMY_AUTH_TOKEN;
   const API_KEY = process.env.BICONOMY_DAPP_API_KEY;
 
+  const formattedName = name.replace(/[^a-zA-Z0-9\s]/g, "");
+  console.log({ formattedName });
+
   const endpoint =
     "https://paymaster-dashboard-backend.prod.biconomy.io/api/v2/public/sdk/smart-contract";
 
@@ -21,7 +24,7 @@ export default async function addSmartContractToPaymaster(
   };
 
   const data = {
-    name,
+    name: formattedName,
     address,
     abi: string_abi,
     whitelistedMethods,
@@ -43,7 +46,7 @@ export default async function addSmartContractToPaymaster(
       "functions/addSmartContractToPaymaster",
       "index",
       "Error on Adding Smart Contract",
-      { res: err }
+      { res: err.response.data }
     );
   }
 }

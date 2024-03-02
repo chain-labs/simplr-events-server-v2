@@ -3,6 +3,7 @@ import { logError } from "../utils/logger.utils.js";
 import { getMerkleTreeRoot, sendDataToIPFS } from "../utils/sendDataToIpfs.js";
 import CONTRACT from "../contracts.js";
 import { QueryParams } from "../types/DatabaseTypes.js";
+import { TEST_NETWORK, getRpcUrl } from "../constants.js";
 
 const { ALCHEMY_KEY, MINTER_PRIVATE_KEY } = process.env;
 
@@ -19,7 +20,7 @@ export const writeSingleUserToBatch = async ({
 }: Args) => {
   try {
     const provider = new ethers.providers.JsonRpcProvider(
-      `https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_KEY}`
+      getRpcUrl(TEST_NETWORK, ALCHEMY_KEY)
     );
     const signer = new ethers.Wallet(MINTER_PRIVATE_KEY, provider);
     const contractABI = CONTRACT.SimplrEvents.abi;

@@ -1,15 +1,18 @@
 import { ethers } from "ethers";
 import CONTRACT from "../contracts.js";
 import { logError } from "../utils/logger.utils.js";
+import { TEST_NETWORK, getRpcUrl } from "../constants.js";
 
 const { ALCHEMY_KEY, MINTER_PRIVATE_KEY } = process.env;
 
 const addMinterRole = async (contractAddress: string) => {
   try {
     const provider = new ethers.providers.JsonRpcProvider(
-      `https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_KEY}`
+      getRpcUrl(TEST_NETWORK, ALCHEMY_KEY)
     );
+
     const signer = new ethers.Wallet(MINTER_PRIVATE_KEY, provider);
+    console.log({ provider, signer });
 
     const contractABI = CONTRACT.SimplrEvents.abi;
     const minterAddress = await signer.getAddress();
@@ -22,6 +25,8 @@ const addMinterRole = async (contractAddress: string) => {
     const tx = await contract
       .connect(signer)
       .addNewMinter(minterAddress, { value: 0 });
+
+    console.log({ tx });
 
     await tx.wait();
 
